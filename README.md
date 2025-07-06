@@ -124,7 +124,7 @@ PORT=5000
 NODE_ENV=development
 
 # MongoDB Atlas Connection
-MONGODB_URI=mongodb+srv://shop_user:shop_password@badminton-shop-cluster.wcjjhqv.mongodb.net/?retryWrites=true&w=majority&appName=badminton-shop-cluster
+MONGODB_URI=mongodb_uri
 
 # JWT Secret
 JWT_SECRET=badminton_shop_jwt_secret_key_2024
