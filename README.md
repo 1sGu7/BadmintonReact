@@ -154,6 +154,7 @@ badminton-web/
 ### Backend (.env)
 ```env
 PORT=5000
+<<<<<<< HEAD
 NODE_ENV=production
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
 JWT_SECRET=your-super-secret-jwt-key-min-32-characters
@@ -162,6 +163,23 @@ CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
 CLOUDINARY_API_KEY=your-cloudinary-api-key
 CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 FRONTEND_URL=http://your-domain.com
+=======
+NODE_ENV=development
+
+# MongoDB Atlas Connection
+MONGODB_URI=mongodb_uri
+
+# JWT Secret
+JWT_SECRET=badminton_shop_jwt_secret_key_2024
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Frontend URL
+FRONTEND_URL=http://localhost:3000
+>>>>>>> 0c130eb5d5f31b488ff4046e88d4a09fca5bba7b
 ```
 
 ### Frontend (.env.local)
@@ -362,6 +380,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Roadmap
 
+<<<<<<< HEAD
 - [ ] PWA support
 - [ ] Real-time notifications
 - [ ] Advanced search filters
@@ -369,3 +388,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Multi-language support
 - [ ] Mobile app
 - [ ] Analytics dashboard 
+=======
+## 🙏 Cảm ơn
+
+Cảm ơn bạn đã quan tâm đến dự án Badminton Shop! Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi. 
+>>>>>>> 0c130eb5d5f31b488ff4046e88d4a09fca5bba7b
