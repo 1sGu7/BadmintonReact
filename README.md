@@ -1,395 +1,417 @@
-# Badminton Web App
+# 🏸 Badminton Web App - Jenkins Pipeline Deployment
 
-Ứng dụng web bán hàng cầu lông với Next.js frontend và Node.js backend, được thiết kế để deploy trên EC2 với Jenkins CI/CD pipeline.
+Ứng dụng web bán cầu lông với Next.js frontend, Node.js backend, và MongoDB, được triển khai tự động thông qua Jenkins CI/CD pipeline trên AWS EC2.
 
-## 🚀 Tính năng
+## 🎯 Tính năng
 
-### Frontend (Next.js)
-- ✅ Giao diện responsive với Tailwind CSS
-- ✅ Quản lý state với React Context
-- ✅ Authentication và Authorization
-- ✅ Shopping cart functionality
-- ✅ Product catalog với search và filter
-- ✅ Admin dashboard
-- ✅ Image upload với Cloudinary
+- **Frontend**: Next.js với TypeScript và Tailwind CSS
+- **Backend**: Node.js với Express và MongoDB Atlas
+- **Database**: MongoDB Atlas (cloud database)
+- **File Storage**: Cloudinary (cloud image storage)
+- **Reverse Proxy**: Nginx với caching và security headers
+- **CI/CD**: Jenkins pipeline tự động
+- **Containerization**: Docker với Docker Compose
+- **Infrastructure**: AWS EC2 với Elastic IP
 
-### Backend (Node.js)
-- ✅ RESTful API với Express.js
-- ✅ MongoDB database
-- ✅ JWT authentication
-- ✅ File upload với Cloudinary
-- ✅ Data encryption
-- ✅ Admin middleware
-- ✅ Order management
+## 🚀 Triển khai nhanh
 
-### DevOps & CI/CD
-- ✅ Docker containerization
-- ✅ Jenkins CI/CD pipeline
-- ✅ GitHub integration
-- ✅ Environment variables security
-- ✅ Automated deployment
-- ✅ Health monitoring
+### Bước 1: Chuẩn bị EC2 Instance
 
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: Next.js 13
-- **Styling**: Tailwind CSS
-- **State Management**: React Context
-- **HTTP Client**: Axios
-- **Icons**: React Icons (Feather Icons)
-
-### Backend
-- **Runtime**: Node.js 18
-- **Framework**: Express.js
-- **Database**: MongoDB
-- **Authentication**: JWT
-- **File Upload**: Cloudinary
-- **Encryption**: AES-256
-
-### DevOps
-- **Containerization**: Docker & Docker Compose
-- **CI/CD**: Jenkins
-- **Cloud**: AWS EC2
-- **Reverse Proxy**: Nginx (Optional)
-
-## 📋 Yêu cầu hệ thống
-
-### Development
-- Node.js 18+
-- npm 9+
-- MongoDB (local hoặc Atlas)
-- Git
-
-### Production (EC2)
-- Ubuntu 24.04 LTS
-- 2GB RAM minimum (4GB recommended)
-- 20GB storage
-- Docker & Docker Compose
-- Jenkins
-- Nginx (Optional)
-
-## 🚀 Quick Start
-
-### Development
-
-1. **Clone repository**
 ```bash
-git clone https://github.com/your-username/badminton-web.git
-cd badminton-web
+# Thông số khuyến nghị
+- Instance Type: t3.medium (2 vCPU, 4GB RAM)
+- OS: Ubuntu 24.04 LTS
+- Storage: 20GB GP3
+- Security Group: Mở ports 22, 80, 443, 8080
 ```
 
-2. **Cài đặt dependencies**
-```bash
-# Backend
-cd backend
-npm install
-
-# Frontend
-cd ../frontend
-npm install
-```
-
-3. **Cấu hình environment variables**
-```bash
-# Copy env.example
-cp env.example .env
-
-# Chỉnh sửa .env với thông tin thực
-```
-
-4. **Chạy development servers**
-```bash
-# Backend (port 5000)
-cd backend
-npm run dev
-
-# Frontend (port 3000)
-cd frontend
-npm run dev
-```
-
-### Production Deployment
-
-Xem hướng dẫn chi tiết trong:
-- [EC2_DEPLOYMENT_GUIDE.md](./EC2_DEPLOYMENT_GUIDE.md) - Hướng dẫn deploy lên EC2
-- [JENKINS_ENV_SETUP.md](./JENKINS_ENV_SETUP.md) - Cấu hình Jenkins
-
-### Quick EC2 Setup
+### Bước 2: Cài đặt Jenkins
 
 ```bash
-# Kết nối SSH vào EC2
+# Kết nối SSH
 ssh -i your-key.pem ubuntu@your-ec2-ip
 
-# Chạy setup script
-curl -fsSL https://raw.githubusercontent.com/your-username/badminton-web/main/scripts/setup-ec2.sh | bash
+# Cài đặt Java (required cho Jenkins)
+sudo apt update
+sudo apt install -y openjdk-17-jdk
 
-# Reboot system
-sudo reboot
+# Cài đặt Jenkins
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+sudo apt update
+sudo apt install -y jenkins
+
+# Khởi động Jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+# Lấy initial admin password
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
-## 📁 Cấu trúc dự án
+### Bước 3: Cấu hình Jenkins
 
+1. **Truy cập Jenkins**: `http://your-ec2-ip:8080`
+2. **Nhập initial password** từ bước trước
+3. **Cài đặt suggested plugins**
+4. **Tạo admin user**
+
+### Bước 4: Cài đặt Jenkins Plugins
+
+Vào **Manage Jenkins > Manage Plugins > Available** và cài đặt:
+
+- ✅ Docker Pipeline
+- ✅ Docker plugin
+- ✅ GitHub Integration
+- ✅ Pipeline: GitHub
+- ✅ Credentials Binding
+- ✅ Environment Injector
+- ✅ Parameterized Trigger
+
+### Bước 5: Cấu hình Jenkins Credentials
+
+Vào **Manage Jenkins > Manage Credentials > System > Global credentials > Add Credentials**
+
+#### A. GitHub Credentials
 ```
-badminton-web/
-├── backend/                 # Node.js API
-│   ├── models/             # MongoDB models
-│   ├── routes/             # API routes
-│   ├── middleware/         # Custom middleware
-│   ├── utils/              # Utility functions
-│   └── server.js           # Main server file
-├── frontend/               # Next.js app
-│   ├── components/         # React components
-│   ├── pages/              # Next.js pages
-│   ├── contexts/           # React contexts
-│   └── styles/             # CSS styles
-├── scripts/                # Deployment scripts
-├── docker-compose.yml      # Docker services
-├── Jenkinsfile            # CI/CD pipeline
-└── README.md              # This file
+Kind: Username with password
+Scope: Global
+Username: your-github-username
+Password: your-github-token
+ID: github-credentials
 ```
 
-## 🔧 Environment Variables
+#### B. MongoDB Atlas Credentials
+```
+Kind: Secret text
+Scope: Global
+Secret: mongodb+srv://username:password@cluster.mongodb.net/database
+ID: mongodb-uri
+```
 
-### Backend (.env)
-```env
-PORT=5000
-<<<<<<< HEAD
+#### C. JWT Secret
+```
+Kind: Secret text
+Scope: Global
+Secret: your-super-secret-jwt-key-min-32-characters
+ID: jwt-secret
+```
+
+#### D. Cloudinary Credentials
+```
+Kind: Username with password
+Scope: Global
+Username: your-cloudinary-cloud-name
+Password: your-cloudinary-api-secret
+ID: cloudinary-credentials
+```
+
+#### E. Cloudinary API Key
+```
+Kind: Secret text
+Scope: Global
+Secret: your-cloudinary-api-key
+ID: cloudinary-api-key
+```
+
+### Bước 6: Cấu hình Jenkins Environment Variables
+
+Vào **Manage Jenkins > Configure System > Global properties > Environment variables**
+
+Thêm các biến sau:
+
+```bash
+# MongoDB Configuration
+MONGODB_URI=${MONGODB_URI}
+MONGODB_DATABASE=badminton_shop
+
+# JWT Configuration
+JWT_SECRET=${JWT_SECRET}
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+
+# Application Configuration
 NODE_ENV=production
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
+
+### Bước 7: Tạo Jenkins Pipeline Job
+
+1. **Vào Jenkins Dashboard**
+2. **Click "New Item"**
+3. **Chọn "Pipeline"**
+4. **Đặt tên**: `badminton-web-pipeline`
+5. **Trong Pipeline section**:
+   - Definition: Pipeline script from SCM
+   - SCM: Git
+   - Repository URL: `https://github.com/your-username/badminton-web.git`
+   - Credentials: `github-credentials`
+   - Branch: `*/main`
+   - Script Path: `Jenkinsfile`
+
+### Bước 8: Cấu hình GitHub Webhook (Optional)
+
+1. **Vào GitHub repository Settings > Webhooks**
+2. **Add webhook**:
+   - Payload URL: `http://your-ec2-ip:8080/github-webhook/`
+   - Content type: `application/json`
+   - Events: `Just the push event`
+   - Active: ✓
+
+### Bước 9: Chạy Pipeline
+
+1. **Vào Jenkins job** `badminton-web-pipeline`
+2. **Click "Build Now"**
+3. **Theo dõi build log**
+
+## 🔧 Cấu hình chi tiết
+
+### Environment Variables
+
+Tất cả biến môi trường được quản lý qua Jenkins:
+
+#### MongoDB Atlas
+```bash
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+MONGODB_DATABASE=badminton_shop
+```
+
+#### JWT Authentication
+```bash
 JWT_SECRET=your-super-secret-jwt-key-min-32-characters
-ENCRYPTION_KEY=your-64-character-hex-encryption-key
+```
+
+#### Cloudinary
+```bash
 CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
 CLOUDINARY_API_KEY=your-cloudinary-api-key
 CLOUDINARY_API_SECRET=your-cloudinary-api-secret
-FRONTEND_URL=http://your-domain.com
-=======
-NODE_ENV=development
-
-# MongoDB Atlas Connection
-MONGODB_URI=mongodb_uri
-
-# JWT Secret
-JWT_SECRET=badminton_shop_jwt_secret_key_2024
-
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Frontend URL
-FRONTEND_URL=http://localhost:3000
->>>>>>> 0c130eb5d5f31b488ff4046e88d4a09fca5bba7b
 ```
 
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://your-domain.com:5000
-```
-
-## 🐳 Docker
-
-### Development
+#### Application
 ```bash
-# Build và chạy tất cả services
-docker-compose up --build
-
-# Chạy background
-docker-compose up -d
-
-# Xem logs
-docker-compose logs -f
-
-# Dừng services
-docker-compose down
+NODE_ENV=production
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ```
 
-### Production
-```bash
-# Build production images
-docker-compose -f docker-compose.prod.yml up --build -d
+### Jenkinsfile Pipeline Stages
 
-# Scale services
-docker-compose up -d --scale backend=2 --scale frontend=2
+Pipeline tự động thực hiện các bước sau:
+
+1. **Checkout**: Clone source code từ Git
+2. **Environment Setup**: Tạo thư mục và file cấu hình
+3. **Install Dependencies**: Cài đặt Docker, Nginx nếu chưa có
+4. **Security Scan**: Chạy npm audit
+5. **Build & Test**: Build frontend và backend
+6. **Docker Build**: Build Docker images
+7. **Deploy**: Cấu hình Nginx và chạy containers
+8. **Health Check**: Kiểm tra ứng dụng
+9. **Cleanup**: Dọn dẹp resources
+
+### Docker Configuration
+
+#### Frontend Dockerfile
+- Multi-stage build với Node.js 18
+- Standalone output cho production
+- Optimized cho Nginx
+
+#### Backend Dockerfile
+- Node.js 18 với Express
+- Health checks
+- Non-root user
+
+#### Docker Compose
+```yaml
+version: '3.8'
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+  
+  backend:
+    build: ./backend
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
 ```
 
-## 🔄 CI/CD Pipeline
+### Nginx Configuration
 
-### Jenkins Pipeline Stages
-1. **Checkout** - Clone repository
-2. **Environment Setup** - Create .env files from Jenkins variables
-3. **Install Dependencies** - Install npm packages
-4. **Security Scan** - Run npm audit
-5. **Build & Test** - Build applications
-6. **Docker Build** - Build Docker images
-7. **Deploy** - Deploy to production
-8. **Health Check** - Verify deployment
-9. **Cleanup** - Clean up resources
+Nginx được cấu hình tự động với:
 
-### GitHub Webhook
-- Tự động trigger build khi push code
-- Support multiple branches
-- Secure credentials management
+- **Frontend proxy**: `http://localhost:3000`
+- **Backend proxy**: `http://localhost:5000`
+- **Static asset caching**
+- **Rate limiting**
+- **Security headers**
+- **Gzip compression**
+
+## 🌐 URLs sau khi deploy
+
+- **Frontend**: `http://your-ec2-ip` (port 80)
+- **Backend API**: `http://your-ec2-ip/api`
+- **Jenkins**: `http://your-ec2-ip:8080`
+- **Health Check**: `http://your-ec2-ip/health`
+
+## 🔒 Security
+
+### Security Headers (Nginx)
+```nginx
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+```
+
+### Rate Limiting
+```nginx
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=general:10m rate=30r/s;
+```
+
+### Environment Variables
+- Tất cả secrets trong Jenkins Credentials
+- Không commit secrets vào Git
+- Backup Jenkins configuration
 
 ## 📊 Monitoring
 
 ### Health Checks
+- Backend: `curl http://localhost:5000/api/health`
+- Frontend: `curl http://localhost:3000`
+- Nginx: `curl http://localhost/health`
+
+### Jenkins Pipeline Logs
+- Vào Jenkins job > Build number > Console Output
+- Xem logs chi tiết của từng stage
+
+### Docker Logs
 ```bash
-# Backend health
-curl http://localhost:5000/api/health
+# Frontend logs
+docker logs badminton-frontend
 
-# Frontend health
-curl http://localhost:3000
+# Backend logs
+docker logs badminton-backend
 
-# Docker containers
-docker ps
+# All containers
+docker-compose -f /opt/badminton-web/docker-compose.prod.yml logs -f
 ```
 
-### Monitoring Scripts
+## 🚨 Troubleshooting
+
+### Jenkins Issues
 ```bash
-# System health check
-/opt/badminton-web/scripts/monitor.sh
+# Check Jenkins status
+sudo systemctl status jenkins
 
-# Create backup
-/opt/badminton-web/scripts/backup.sh
-
-# Clean up resources
-/opt/badminton-web/scripts/cleanup.sh
-```
-
-## 🔒 Security
-
-### Best Practices
-- ✅ Environment variables không commit vào Git
-- ✅ JWT secrets được mã hóa
-- ✅ Data encryption với AES-256
-- ✅ Input validation và sanitization
-- ✅ CORS configuration
-- ✅ Rate limiting
-- ✅ Secure headers
-
-### Production Checklist
-- [ ] SSL certificate installed
-- [ ] Firewall configured
-- [ ] Regular backups scheduled
-- [ ] Security patches updated
-- [ ] Monitoring alerts configured
-- [ ] Access logs reviewed
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Docker Issues
-```bash
-# Clean Docker resources
-docker system prune -f
-
-# Check disk space
-df -h
-
-# Restart Docker
-sudo systemctl restart docker
-```
-
-#### Jenkins Issues
-```bash
-# Check Jenkins logs
+# View Jenkins logs
 sudo tail -f /var/log/jenkins/jenkins.log
 
 # Restart Jenkins
 sudo systemctl restart jenkins
-
-# Check Jenkins status
-sudo systemctl status jenkins
 ```
 
-#### Application Issues
+### Docker Issues
 ```bash
-# Check application logs
-docker-compose logs -f
+# Check Docker status
+sudo systemctl status docker
 
-# Restart services
-docker-compose restart
+# Check containers
+docker ps -a
 
-# Check environment variables
-docker-compose exec backend env
+# View container logs
+docker logs <container-name>
+
+# Restart containers
+docker-compose -f /opt/badminton-web/docker-compose.prod.yml restart
 ```
 
-## 📚 API Documentation
-
-### Authentication
+### Nginx Issues
 ```bash
-# Login
-POST /api/auth/login
-{
-  "email": "user@example.com",
-  "password": "password"
-}
+# Check Nginx status
+sudo systemctl status nginx
 
-# Register
-POST /api/auth/register
-{
-  "name": "User Name",
-  "email": "user@example.com",
-  "password": "password"
-}
+# Test Nginx config
+sudo nginx -t
+
+# View Nginx logs
+sudo tail -f /var/log/nginx/error.log
+
+# Reload Nginx
+sudo systemctl reload nginx
 ```
 
-### Products
+### Pipeline Issues
+1. **Check Jenkins Credentials**: Đảm bảo tất cả credentials được cấu hình đúng
+2. **Check Environment Variables**: Kiểm tra biến môi trường trong Jenkins
+3. **Check Git Repository**: Đảm bảo repository URL và credentials đúng
+4. **Check Docker**: Đảm bảo Docker được cài đặt và Jenkins có quyền truy cập
+
+## 🔄 Auto-restart Configuration
+
+### Docker Containers
+```yaml
+# Trong docker-compose.prod.yml
+restart: unless-stopped
+```
+
+### Nginx Service
 ```bash
-# Get all products
-GET /api/products
-
-# Get product by ID
-GET /api/products/:id
-
-# Create product (Admin only)
-POST /api/products
+# Enable Nginx auto-start
+sudo systemctl enable nginx
 ```
 
-### Orders
+### Jenkins Service
 ```bash
-# Create order
-POST /api/orders
-
-# Get user orders
-GET /api/orders
-
-# Get order by ID
-GET /api/orders/:id
+# Enable Jenkins auto-start
+sudo systemctl enable jenkins
 ```
 
-## 🤝 Contributing
+## 📚 Tài liệu tham khảo
+
+- [Jenkins Pipeline Documentation](https://www.jenkins.io/doc/book/pipeline/)
+- [Docker Documentation](https://docs.docker.com/)
+- [Nginx Documentation](https://nginx.org/en/docs/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/)
+- [Cloudinary Documentation](https://cloudinary.com/documentation)
+
+## 🤝 Đóng góp
 
 1. Fork repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
+2. Tạo feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit changes (`git commit -m 'Add amazing feature'`)
 4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+5. Tạo Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
-## 📞 Support
+## 📞 Hỗ trợ
 
-- **Documentation**: [EC2_DEPLOYMENT_GUIDE.md](./EC2_DEPLOYMENT_GUIDE.md)
-- **Jenkins Setup**: [JENKINS_ENV_SETUP.md](./JENKINS_ENV_SETUP.md)
-- **Issues**: [GitHub Issues](https://github.com/your-username/badminton-web/issues)
+- **Issues**: Tạo issue trên GitHub
+- **Documentation**: Xem các file markdown trong repository
+- **Jenkins**: Kiểm tra Jenkins logs và pipeline status
 
-## 🎯 Roadmap
+---
 
-<<<<<<< HEAD
-- [ ] PWA support
-- [ ] Real-time notifications
-- [ ] Advanced search filters
-- [ ] Payment integration
-- [ ] Multi-language support
-- [ ] Mobile app
-- [ ] Analytics dashboard 
-=======
-## 🙏 Cảm ơn
-
-Cảm ơn bạn đã quan tâm đến dự án Badminton Shop! Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi. 
->>>>>>> 0c130eb5d5f31b488ff4046e88d4a09fca5bba7b
+**Lưu ý quan trọng**: Đảm bảo thay đổi tất cả passwords và secrets trong production environment!

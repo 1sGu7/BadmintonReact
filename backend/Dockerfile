@@ -1,32 +1,47 @@
-# Backend Dockerfile - Tối ưu cho EC2 Free Tier
-FROM node:18-alpine AS builder
+# Backend Dockerfile for Node.js API
+FROM node:18-alpine AS base
 
-# Set working directory
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm ci --only=production
 
-# Install dependencies (chỉ production)
-RUN npm ci --only=production && npm cache clean --force
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY backend/ .
 
-# Copy source code
-COPY . .
+# Build application (if needed)
+RUN npm run build || echo "No build script found"
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+# Production image, copy all the files and run the app
+FROM base AS runner
+WORKDIR /app
 
-# Change ownership
-RUN chown -R nodejs:nodejs /app
+ENV NODE_ENV production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+# Copy built application
+COPY --from=builder --chown=nodejs:nodejs /app ./
+
 USER nodejs
 
-# Expose port
 EXPOSE 5000
+
+ENV PORT 5000
+ENV HOSTNAME "0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start application
-CMD ["node", "server.js"] 
+CMD ["npm", "start"] 

@@ -1,14 +1,12 @@
 #!/bin/bash
 
 # Badminton Web App - EC2 Setup Script
-# Ubuntu 24.04 LTS
-# Cài đặt Docker, Node.js, Jenkins, Nginx
+# Hướng dẫn: https://github.com/your-username/badminton-web
 
 set -e
 
-echo "=== Badminton Web App - EC2 Setup Script ==="
-echo "Starting installation on $(date)"
-echo ""
+echo "=== Badminton Web App EC2 Setup ==="
+echo "Starting setup process..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -39,50 +37,36 @@ fi
 print_status "Updating system packages..."
 sudo apt update && sudo apt upgrade -y
 
-# Install basic dependencies
-print_status "Installing basic dependencies..."
-sudo apt install -y curl wget git unzip software-properties-common apt-transport-https ca-certificates gnupg lsb-release
-
-# Install Java (Required for Jenkins)
-print_status "Installing Java 17..."
-sudo apt install -y openjdk-17-jdk
-java -version
+# Install required packages
+print_status "Installing required packages..."
+sudo apt install -y curl wget git unzip software-properties-common \
+    apt-transport-https ca-certificates gnupg lsb-release \
+    nginx openjdk-17-jdk
 
 # Install Docker
 print_status "Installing Docker..."
-# Add Docker GPG key
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-# Add Docker repository
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Install Docker
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# Add current user to docker group
+# Add user to docker group
 sudo usermod -aG docker $USER
+sudo usermod -aG docker jenkins
 
 # Start and enable Docker
 sudo systemctl start docker
 sudo systemctl enable docker
 
-# Verify Docker installation
-docker --version
-docker-compose --version
-
-# Install Node.js 18.x
-print_status "Installing Node.js 18.x..."
+# Install Node.js
+print_status "Installing Node.js..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# Verify Node.js installation
-node --version
-npm --version
-
 # Install Jenkins
 print_status "Installing Jenkins..."
-# Add Jenkins repository
 curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
   /usr/share/keyrings/jenkins-keyring.asc > /dev/null
 
@@ -90,49 +74,141 @@ echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
   https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
   /etc/apt/sources.list.d/jenkins.list > /dev/null
 
-# Install Jenkins
 sudo apt update
 sudo apt install -y jenkins
-
-# Add jenkins user to docker group
-sudo usermod -aG docker jenkins
 
 # Start and enable Jenkins
 sudo systemctl start jenkins
 sudo systemctl enable jenkins
 
-# Install Nginx (Optional)
-print_status "Installing Nginx..."
-sudo apt install -y nginx
-sudo systemctl start nginx
+# Configure Nginx
+print_status "Configuring Nginx..."
+
+# Create Nginx configuration
+sudo tee /etc/nginx/sites-available/badminton-web > /dev/null <<'EOF'
+# Cấu hình Nginx cho Badminton Web App
+server {
+    listen 80;
+    server_name _;  # Chấp nhận tất cả domain/IP
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+
+    # Frontend routes - serve static files from Next.js build
+    location / {
+        limit_req zone=general burst=20 nodelay;
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
+        
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            proxy_pass http://localhost:3000;
+        }
+    }
+
+    # Backend API routes
+    location /api/ {
+        limit_req zone=api burst=10 nodelay;
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
+    }
+
+    # Health check
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Nginx status (optional)
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+    }
+}
+
+# Rate limiting configuration
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=general:10m rate=30r/s;
+EOF
+
+# Enable Nginx configuration
+sudo ln -sf /etc/nginx/sites-available/badminton-web /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Test and reload Nginx
+sudo nginx -t
+sudo systemctl reload nginx
 sudo systemctl enable nginx
 
-# Configure firewall
-print_status "Configuring firewall..."
-sudo ufw --force enable
-sudo ufw allow ssh
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 8080/tcp
-sudo ufw allow 5000/tcp
-sudo ufw allow 3000/tcp
-
 # Create application directory
-print_status "Creating application directory..."
+print_status "Setting up application directory..."
 sudo mkdir -p /opt/badminton-web
 sudo chown $USER:$USER /opt/badminton-web
 
-# Create backup directory
-sudo mkdir -p /opt/backups/badminton-web
-sudo chown $USER:$USER /opt/backups/badminton-web
+# Create environment file template
+print_status "Creating environment file template..."
+cat > /opt/badminton-web/.env.example << 'EOF'
+# MongoDB Configuration
+MONGODB_ROOT_USERNAME=admin
+MONGODB_ROOT_PASSWORD=your-secure-mongodb-password
+MONGODB_DATABASE=badminton_shop
 
-# Create logs directory
-sudo mkdir -p /opt/badminton-web/logs
-sudo chown $USER:$USER /opt/badminton-web/logs
+# Backend Configuration
+BACKEND_JWT_SECRET=your-super-secret-jwt-key-min-32-characters
+BACKEND_CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
+BACKEND_CLOUDINARY_API_KEY=your-cloudinary-api-key
+BACKEND_CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+
+# Frontend Configuration
+FRONTEND_NEXT_PUBLIC_API_URL=http://your-elastic-ip/api
+EOF
 
 # Create monitoring script
 print_status "Creating monitoring script..."
-cat > /opt/badminton-web/scripts/monitor.sh << 'EOF'
+sudo mkdir -p /opt/badminton-web/scripts
+sudo tee /opt/badminton-web/scripts/monitor.sh > /dev/null << 'EOF'
 #!/bin/bash
 
 # Health check script
@@ -154,13 +230,22 @@ free -h
 echo "Application health:"
 curl -f http://localhost:5000/api/health && echo "Backend: OK" || echo "Backend: FAILED"
 curl -f http://localhost:3000 && echo "Frontend: OK" || echo "Frontend: FAILED"
+curl -f http://localhost && echo "Nginx: OK" || echo "Nginx: FAILED"
+
+# Check Nginx status
+echo "Nginx status:"
+sudo systemctl status nginx --no-pager -l
+
+# Check Elastic IP
+echo "Current IP:"
+curl -s http://checkip.amazonaws.com/
 EOF
 
-chmod +x /opt/badminton-web/scripts/monitor.sh
+sudo chmod +x /opt/badminton-web/scripts/monitor.sh
 
 # Create backup script
 print_status "Creating backup script..."
-cat > /opt/badminton-web/scripts/backup.sh << 'EOF'
+sudo tee /opt/badminton-web/scripts/backup.sh > /dev/null << 'EOF'
 #!/bin/bash
 
 BACKUP_DIR="/opt/backups/badminton-web"
@@ -174,13 +259,14 @@ docker exec badminton_mongodb mongodump --out /backup/$DATE
 # Backup application files
 tar -czf $BACKUP_DIR/app_$DATE.tar.gz /opt/badminton-web
 
+# Backup Nginx config
+tar -czf $BACKUP_DIR/nginx_$DATE.tar.gz /etc/nginx
+
 # Clean old backups (keep last 7 days)
 find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
-
-echo "Backup completed: $BACKUP_DIR/app_$DATE.tar.gz"
 EOF
 
-chmod +x /opt/badminton-web/scripts/backup.sh
+sudo chmod +x /opt/badminton-web/scripts/backup.sh
 
 # Configure log rotation
 print_status "Configuring log rotation..."
@@ -192,116 +278,40 @@ sudo tee /etc/logrotate.d/badminton-web > /dev/null << 'EOF'
     compress
     delaycompress
     notifempty
-    create 644 ubuntu ubuntu
+    create 644 jenkins jenkins
+}
+
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 644 www-data adm
+    postrotate
+        if [ -f /var/run/nginx.pid ]; then
+            kill -USR1 `cat /var/run/nginx.pid`
+        fi
+    endscript
 }
 EOF
 
-# Create systemd service for monitoring
-print_status "Creating systemd service for monitoring..."
-sudo tee /etc/systemd/system/badminton-monitor.service > /dev/null << 'EOF'
-[Unit]
-Description=Badminton Web App Monitoring
-After=network.target
-
-[Service]
-Type=oneshot
-User=ubuntu
-ExecStart=/opt/badminton-web/scripts/monitor.sh
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Create systemd timer for monitoring
-sudo tee /etc/systemd/system/badminton-monitor.timer > /dev/null << 'EOF'
-[Unit]
-Description=Run Badminton Web App monitoring every 5 minutes
-Requires=badminton-monitor.service
-
-[Timer]
-Unit=badminton-monitor.service
-OnCalendar=*:0/5
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-# Enable monitoring timer
-sudo systemctl enable badminton-monitor.timer
-sudo systemctl start badminton-monitor.timer
-
-# Create cleanup script
-print_status "Creating cleanup script..."
-cat > /opt/badminton-web/scripts/cleanup.sh << 'EOF'
-#!/bin/bash
-
-echo "Cleaning up Docker resources..."
-
-# Remove unused containers
-docker container prune -f
-
-# Remove unused images
-docker image prune -f
-
-# Remove unused volumes
-docker volume prune -f
-
-# Remove unused networks
-docker network prune -f
-
-# Clean npm cache
-npm cache clean --force
-
-echo "Cleanup completed!"
-EOF
-
-chmod +x /opt/badminton-web/scripts/cleanup.sh
-
-# Create crontab for automatic cleanup
-print_status "Setting up automatic cleanup..."
-(crontab -l 2>/dev/null; echo "0 2 * * * /opt/badminton-web/scripts/cleanup.sh") | crontab -
-
-# Display installation summary
-print_status "Installation completed successfully!"
-echo ""
-echo "=== Installation Summary ==="
-echo "✅ Docker: $(docker --version)"
-echo "✅ Node.js: $(node --version)"
-echo "✅ NPM: $(npm --version)"
-echo "✅ Jenkins: Installed and running"
-echo "✅ Nginx: Installed and running"
-echo "✅ Firewall: Configured"
+# Get Jenkins initial password
+print_status "Setup completed successfully!"
 echo ""
 echo "=== Next Steps ==="
 echo "1. Get Jenkins initial password:"
 echo "   sudo cat /var/lib/jenkins/secrets/initialAdminPassword"
 echo ""
-echo "2. Access Jenkins at: http://$(curl -s ifconfig.me):8080"
+echo "2. Configure Elastic IP in AWS Console"
+echo "3. Update .env file with your configuration"
+echo "4. Clone your repository to /opt/badminton-web"
+echo "5. Run docker-compose -f docker-compose.prod.yml up -d"
 echo ""
-echo "3. Clone your repository:"
-echo "   cd /opt/badminton-web"
-echo "   git clone https://github.com/your-username/badminton-web.git ."
+echo "=== URLs ==="
+echo "Jenkins: http://$(curl -s http://checkip.amazonaws.com/):8080"
+echo "Application: http://$(curl -s http://checkip.amazonaws.com/)"
+echo "Health Check: http://$(curl -s http://checkip.amazonaws.com/)/health"
 echo ""
-echo "4. Configure Jenkins environment variables (see JENKINS_ENV_SETUP.md)"
-echo ""
-echo "5. Set up GitHub webhook (see EC2_DEPLOYMENT_GUIDE.md)"
-echo ""
-echo "=== Useful Commands ==="
-echo "• Check system status: /opt/badminton-web/scripts/monitor.sh"
-echo "• Create backup: /opt/badminton-web/scripts/backup.sh"
-echo "• Clean up resources: /opt/badminton-web/scripts/cleanup.sh"
-echo "• View Jenkins logs: sudo tail -f /var/log/jenkins/jenkins.log"
-echo "• Restart Jenkins: sudo systemctl restart jenkins"
-echo "• Check Docker containers: docker ps"
-echo ""
-echo "=== Security Notes ==="
-echo "⚠️  Change default passwords"
-echo "⚠️  Configure SSL certificates"
-echo "⚠️  Set up regular backups"
-echo "⚠️  Monitor system resources"
-echo ""
-print_status "Setup completed! Please reboot the system to apply all changes."
-echo "Run: sudo reboot" 
+print_status "Setup completed! Please follow the next steps above." 
