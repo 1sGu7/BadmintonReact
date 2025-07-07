@@ -1,280 +1,371 @@
-# Badminton Shop - Hệ thống thương mại điện tử bán linh kiện cầu lông
+# Badminton Web App
 
-## 📋 Mô tả dự án
+Ứng dụng web bán hàng cầu lông với Next.js frontend và Node.js backend, được thiết kế để deploy trên EC2 với Jenkins CI/CD pipeline.
 
-Badminton Shop là một hệ thống thương mại điện tử hoàn chỉnh chuyên bán linh kiện cầu lông, được xây dựng với công nghệ MERN Stack (MongoDB, Express.js, React, Node.js).
+## 🚀 Tính năng
 
-## ✨ Tính năng chính
-
-### Backend
-- ✅ API RESTful với Express.js
-- ✅ Kết nối MongoDB Atlas
-- ✅ Xác thực JWT
-- ✅ Upload hình ảnh với Cloudinary
-- ✅ Quản lý sản phẩm (CRUD)
-- ✅ Quản lý giỏ hàng và đơn hàng
-- ✅ Phân quyền admin/customer
-- ✅ Validation và error handling
-
-### Frontend
+### Frontend (Next.js)
 - ✅ Giao diện responsive với Tailwind CSS
 - ✅ Quản lý state với React Context
-- ✅ Tích hợp React Query cho data fetching
-- ✅ Trang chủ với hero section và featured products
-- ✅ Trang sản phẩm với filter và search
-- ✅ Giỏ hàng và checkout
-- ✅ Trang admin cho quản lý sản phẩm
-- ✅ Authentication và authorization
+- ✅ Authentication và Authorization
+- ✅ Shopping cart functionality
+- ✅ Product catalog với search và filter
+- ✅ Admin dashboard
+- ✅ Image upload với Cloudinary
 
-## 🛠️ Công nghệ sử dụng
+### Backend (Node.js)
+- ✅ RESTful API với Express.js
+- ✅ MongoDB database
+- ✅ JWT authentication
+- ✅ File upload với Cloudinary
+- ✅ Data encryption
+- ✅ Admin middleware
+- ✅ Order management
 
-### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **MongoDB** - Database
-- **Mongoose** - ODM
-- **JWT** - Authentication
-- **bcryptjs** - Password hashing
-- **Cloudinary** - Image upload
-- **Multer** - File upload
-- **Express Validator** - Input validation
+### DevOps & CI/CD
+- ✅ Docker containerization
+- ✅ Jenkins CI/CD pipeline
+- ✅ GitHub integration
+- ✅ Environment variables security
+- ✅ Automated deployment
+- ✅ Health monitoring
+
+## 🛠️ Tech Stack
 
 ### Frontend
-- **Next.js** - React framework
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **React Query** - Data fetching
-- **React Hook Form** - Form handling
-- **React Icons** - Icons
-- **Framer Motion** - Animations
+- **Framework**: Next.js 13
+- **Styling**: Tailwind CSS
+- **State Management**: React Context
+- **HTTP Client**: Axios
+- **Icons**: React Icons (Feather Icons)
+
+### Backend
+- **Runtime**: Node.js 18
+- **Framework**: Express.js
+- **Database**: MongoDB
+- **Authentication**: JWT
+- **File Upload**: Cloudinary
+- **Encryption**: AES-256
+
+### DevOps
+- **Containerization**: Docker & Docker Compose
+- **CI/CD**: Jenkins
+- **Cloud**: AWS EC2
+- **Reverse Proxy**: Nginx (Optional)
+
+## 📋 Yêu cầu hệ thống
+
+### Development
+- Node.js 18+
+- npm 9+
+- MongoDB (local hoặc Atlas)
+- Git
+
+### Production (EC2)
+- Ubuntu 24.04 LTS
+- 2GB RAM minimum (4GB recommended)
+- 20GB storage
+- Docker & Docker Compose
+- Jenkins
+- Nginx (Optional)
+
+## 🚀 Quick Start
+
+### Development
+
+1. **Clone repository**
+```bash
+git clone https://github.com/your-username/badminton-web.git
+cd badminton-web
+```
+
+2. **Cài đặt dependencies**
+```bash
+# Backend
+cd backend
+npm install
+
+# Frontend
+cd ../frontend
+npm install
+```
+
+3. **Cấu hình environment variables**
+```bash
+# Copy env.example
+cp env.example .env
+
+# Chỉnh sửa .env với thông tin thực
+```
+
+4. **Chạy development servers**
+```bash
+# Backend (port 5000)
+cd backend
+npm run dev
+
+# Frontend (port 3000)
+cd frontend
+npm run dev
+```
+
+### Production Deployment
+
+Xem hướng dẫn chi tiết trong:
+- [EC2_DEPLOYMENT_GUIDE.md](./EC2_DEPLOYMENT_GUIDE.md) - Hướng dẫn deploy lên EC2
+- [JENKINS_ENV_SETUP.md](./JENKINS_ENV_SETUP.md) - Cấu hình Jenkins
+
+### Quick EC2 Setup
+
+```bash
+# Kết nối SSH vào EC2
+ssh -i your-key.pem ubuntu@your-ec2-ip
+
+# Chạy setup script
+curl -fsSL https://raw.githubusercontent.com/your-username/badminton-web/main/scripts/setup-ec2.sh | bash
+
+# Reboot system
+sudo reboot
+```
 
 ## 📁 Cấu trúc dự án
 
 ```
 badminton-web/
-├── backend/
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Product.js
-│   │   ├── Cart.js
-│   │   └── Order.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── products.js
-│   │   ├── cart.js
-│   │   ├── orders.js
-│   │   └── upload.js
-│   ├── middleware/
-│   │   └── auth.js
-│   ├── utils/
-│   │   └── cloudinary.js
-│   └── server.js
-├── frontend/
-│   ├── components/
-│   │   ├── Layout/
-│   │   │   ├── Header.tsx
-│   │   │   └── Footer.tsx
-│   │   └── Products/
-│   │       └── ProductCard.tsx
-│   ├── contexts/
-│   │   ├── AuthContext.tsx
-│   │   └── CartContext.tsx
-│   ├── pages/
-│   │   └── index.tsx
-│   ├── styles/
-│   │   └── globals.css
-│   └── package.json
-├── package.json
-├── env.example
-└── README.md
+├── backend/                 # Node.js API
+│   ├── models/             # MongoDB models
+│   ├── routes/             # API routes
+│   ├── middleware/         # Custom middleware
+│   ├── utils/              # Utility functions
+│   └── server.js           # Main server file
+├── frontend/               # Next.js app
+│   ├── components/         # React components
+│   ├── pages/              # Next.js pages
+│   ├── contexts/           # React contexts
+│   └── styles/             # CSS styles
+├── scripts/                # Deployment scripts
+├── docker-compose.yml      # Docker services
+├── Jenkinsfile            # CI/CD pipeline
+└── README.md              # This file
 ```
 
-## 🚀 Hướng dẫn cài đặt
+## 🔧 Environment Variables
 
-### Yêu cầu hệ thống
-- Node.js (v16 trở lên)
-- npm hoặc yarn
-- MongoDB Atlas account
-- Cloudinary account
-
-### Bước 1: Clone dự án
-```bash
-git clone <repository-url>
-cd badminton-web
-```
-
-### Bước 2: Cài đặt dependencies
-```bash
-# Cài đặt dependencies cho backend
-npm install
-
-# Cài đặt dependencies cho frontend
-cd frontend
-npm install
-cd ..
-```
-
-### Bước 3: Cấu hình môi trường
-
-Tạo file `.env` trong thư mục gốc dựa trên `env.example`:
-
+### Backend (.env)
 ```env
-# Server Configuration
 PORT=5000
-NODE_ENV=development
-
-# MongoDB Atlas Connection
-MONGODB_URI=mongodb+srv://shop_user:shop_password@badminton-shop-cluster.wcjjhqv.mongodb.net/?retryWrites=true&w=majority&appName=badminton-shop-cluster
-
-# JWT Secret
-JWT_SECRET=badminton_shop_jwt_secret_key_2024
-
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Frontend URL
-FRONTEND_URL=http://localhost:3000
+NODE_ENV=production
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+JWT_SECRET=your-super-secret-jwt-key-min-32-characters
+ENCRYPTION_KEY=your-64-character-hex-encryption-key
+CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+FRONTEND_URL=http://your-domain.com
 ```
 
-### Bước 4: Cấu hình MongoDB Atlas
+### Frontend (.env.local)
+```env
+NEXT_PUBLIC_API_URL=http://your-domain.com:5000
+```
 
-1. Đăng ký tài khoản MongoDB Atlas
-2. Tạo cluster mới
-3. Tạo database user với quyền read/write
-4. Lấy connection string và cập nhật vào file `.env`
+## 🐳 Docker
 
-### Bước 5: Cấu hình Cloudinary
-
-1. Đăng ký tài khoản Cloudinary
-2. Lấy Cloud Name, API Key, API Secret
-3. Cập nhật vào file `.env`
-
-### Bước 6: Chạy dự án
-
-#### Chạy backend
+### Development
 ```bash
-# Development mode
-npm run dev
+# Build và chạy tất cả services
+docker-compose up --build
 
-# Production mode
-npm start
+# Chạy background
+docker-compose up -d
+
+# Xem logs
+docker-compose logs -f
+
+# Dừng services
+docker-compose down
 ```
 
-#### Chạy frontend
+### Production
 ```bash
-cd frontend
-npm run dev
+# Build production images
+docker-compose -f docker-compose.prod.yml up --build -d
+
+# Scale services
+docker-compose up -d --scale backend=2 --scale frontend=2
 ```
 
-#### Chạy cả backend và frontend
+## 🔄 CI/CD Pipeline
+
+### Jenkins Pipeline Stages
+1. **Checkout** - Clone repository
+2. **Environment Setup** - Create .env files from Jenkins variables
+3. **Install Dependencies** - Install npm packages
+4. **Security Scan** - Run npm audit
+5. **Build & Test** - Build applications
+6. **Docker Build** - Build Docker images
+7. **Deploy** - Deploy to production
+8. **Health Check** - Verify deployment
+9. **Cleanup** - Clean up resources
+
+### GitHub Webhook
+- Tự động trigger build khi push code
+- Support multiple branches
+- Secure credentials management
+
+## 📊 Monitoring
+
+### Health Checks
 ```bash
-npm run dev-full
+# Backend health
+curl http://localhost:5000/api/health
+
+# Frontend health
+curl http://localhost:3000
+
+# Docker containers
+docker ps
 ```
 
-## 🌐 Truy cập ứng dụng
+### Monitoring Scripts
+```bash
+# System health check
+/opt/badminton-web/scripts/monitor.sh
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **API Health Check**: http://localhost:5000/api/health
+# Create backup
+/opt/badminton-web/scripts/backup.sh
 
-## 📚 API Endpoints
+# Clean up resources
+/opt/badminton-web/scripts/cleanup.sh
+```
+
+## 🔒 Security
+
+### Best Practices
+- ✅ Environment variables không commit vào Git
+- ✅ JWT secrets được mã hóa
+- ✅ Data encryption với AES-256
+- ✅ Input validation và sanitization
+- ✅ CORS configuration
+- ✅ Rate limiting
+- ✅ Secure headers
+
+### Production Checklist
+- [ ] SSL certificate installed
+- [ ] Firewall configured
+- [ ] Regular backups scheduled
+- [ ] Security patches updated
+- [ ] Monitoring alerts configured
+- [ ] Access logs reviewed
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Docker Issues
+```bash
+# Clean Docker resources
+docker system prune -f
+
+# Check disk space
+df -h
+
+# Restart Docker
+sudo systemctl restart docker
+```
+
+#### Jenkins Issues
+```bash
+# Check Jenkins logs
+sudo tail -f /var/log/jenkins/jenkins.log
+
+# Restart Jenkins
+sudo systemctl restart jenkins
+
+# Check Jenkins status
+sudo systemctl status jenkins
+```
+
+#### Application Issues
+```bash
+# Check application logs
+docker-compose logs -f
+
+# Restart services
+docker-compose restart
+
+# Check environment variables
+docker-compose exec backend env
+```
+
+## 📚 API Documentation
 
 ### Authentication
-- `POST /api/auth/register` - Đăng ký
-- `POST /api/auth/login` - Đăng nhập
-- `GET /api/auth/profile` - Lấy thông tin profile
-- `PUT /api/auth/profile` - Cập nhật profile
+```bash
+# Login
+POST /api/auth/login
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+
+# Register
+POST /api/auth/register
+{
+  "name": "User Name",
+  "email": "user@example.com",
+  "password": "password"
+}
+```
 
 ### Products
-- `GET /api/products` - Lấy danh sách sản phẩm
-- `GET /api/products/:id` - Lấy chi tiết sản phẩm
-- `POST /api/products` - Tạo sản phẩm (Admin)
-- `PUT /api/products/:id` - Cập nhật sản phẩm (Admin)
-- `DELETE /api/products/:id` - Xóa sản phẩm (Admin)
+```bash
+# Get all products
+GET /api/products
 
-### Cart
-- `GET /api/cart` - Lấy giỏ hàng
-- `POST /api/cart` - Thêm sản phẩm vào giỏ hàng
-- `PUT /api/cart/:itemId` - Cập nhật số lượng
-- `DELETE /api/cart/:itemId` - Xóa sản phẩm khỏi giỏ hàng
+# Get product by ID
+GET /api/products/:id
+
+# Create product (Admin only)
+POST /api/products
+```
 
 ### Orders
-- `POST /api/orders` - Tạo đơn hàng
-- `GET /api/orders` - Lấy danh sách đơn hàng
-- `GET /api/orders/:id` - Lấy chi tiết đơn hàng
-
-### Upload
-- `POST /api/upload/image` - Upload hình ảnh đơn
-- `POST /api/upload/images` - Upload nhiều hình ảnh
-
-## 👥 Tài khoản mẫu
-
-### Admin
-- Email: admin@badmintonshop.com
-- Password: admin123
-
-### Customer
-- Email: customer@badmintonshop.com
-- Password: customer123
-
-## 🔧 Tính năng nâng cao
-
-### Backend
-- ✅ Rate limiting
-- ✅ CORS configuration
-- ✅ Security headers với Helmet
-- ✅ Input validation
-- ✅ Error handling middleware
-- ✅ Image optimization với Cloudinary
-- ✅ Pagination cho products và orders
-- ✅ Search và filter sản phẩm
-- ✅ Order status management
-- ✅ Stock management
-
-### Frontend
-- ✅ Responsive design
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Toast notifications
-- ✅ Form validation
-- ✅ Image lazy loading
-- ✅ Infinite scroll (có thể thêm)
-- ✅ Dark mode (có thể thêm)
-
-## 🚀 Deployment
-
-### Backend (Heroku/Railway)
 ```bash
-# Build và deploy
-npm run build
+# Create order
+POST /api/orders
+
+# Get user orders
+GET /api/orders
+
+# Get order by ID
+GET /api/orders/:id
 ```
 
-### Frontend (Vercel/Netlify)
-```bash
-cd frontend
-npm run build
-```
+## 🤝 Contributing
 
-## 🤝 Đóng góp
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
-1. Fork dự án
-2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Tạo Pull Request
+## 📄 License
 
-## 📝 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Dự án này được phát hành dưới MIT License.
+## 📞 Support
 
-## 📞 Liên hệ
+- **Documentation**: [EC2_DEPLOYMENT_GUIDE.md](./EC2_DEPLOYMENT_GUIDE.md)
+- **Jenkins Setup**: [JENKINS_ENV_SETUP.md](./JENKINS_ENV_SETUP.md)
+- **Issues**: [GitHub Issues](https://github.com/your-username/badminton-web/issues)
 
-- Email: info@badmintonshop.com
-- Website: https://badmintonshop.com
-- GitHub: [repository-url]
+## 🎯 Roadmap
 
-## 🙏 Cảm ơn
-
-Cảm ơn bạn đã quan tâm đến dự án Badminton Shop! Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi. 
+- [ ] PWA support
+- [ ] Real-time notifications
+- [ ] Advanced search filters
+- [ ] Payment integration
+- [ ] Multi-language support
+- [ ] Mobile app
+- [ ] Analytics dashboard 
